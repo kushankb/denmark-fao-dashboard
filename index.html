@@ -278,7 +278,7 @@
 
                     const path = `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} L ${x3} ${y3} A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x4} ${y4} Z`;
 
-                    const labelRadius = radius + 100;
+                    const labelRadius = radius + 40;
                     const labelX = centerX + labelRadius * Math.cos(midAngle);
                     const labelY = centerY + labelRadius * Math.sin(midAngle);
                     const textAnchor = labelX > centerX + 10 ? 'start' : labelX < centerX - 10 ? 'end' : 'middle';
@@ -320,10 +320,10 @@
                                         onMouseLeave={() => setHoveredSegment(null)}
                                     />
 
-                                    <text x={slice.labelX} y={slice.labelY} textAnchor={slice.textAnchor} className="text-sm font-bold pointer-events-none fill-gray-200">
+                                    <text x={slice.labelX} y={slice.labelY} textAnchor={slice.textAnchor} className="text-base font-bold pointer-events-none fill-gray-200">
                                         {slice.domain.name}
                                     </text>
-                                    <text x={slice.labelX} y={slice.labelY + 18} textAnchor={slice.textAnchor} className="text-sm pointer-events-none fill-gray-400">
+                                    <text x={slice.labelX} y={slice.labelY + 20} textAnchor={slice.textAnchor} className="text-sm pointer-events-none fill-gray-400">
                                         {slice.domain.unique_policies} policies
                                     </text>
                                 </g>
