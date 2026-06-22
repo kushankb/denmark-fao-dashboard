@@ -6,7 +6,7 @@
     <title>Denmark FAO Global Roadmap Policy Dashboard</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -88,22 +88,42 @@
             const [searchView, setSearchView] = useState(null); // 'linkages' or 'targets' for showing all results
 
             // Domain colors mapping
+            // Accent colors taken directly from the official FAO domain icons
             const domainColorMap = {
-                'Livestock': '#344C96',
-                'Livestock.': '#344C96',
-                'Enabling Healthy Diets for All': '#3594AF',
-                'Fisheries and Aquaculture': '#4FB5DB',
-                'Soil and Water': '#458C5C',
-                'Forests and Wetlands': '#8EAE4D',
-                'Food Loss and Waste': '#F5C432',
-                'Crops': '#F0AD37',
-                'Clean Energy': '#F98A3C',
-                'Data': '#C2262D',
-                'Inclusive Policies': '#7D2482'
+                'Data': '#74287C',
+                'Livestock': '#2F4997',
+                'Livestock.': '#2F4997',
+                'Crops': '#4CB1DC',
+                'Fisheries and Aquaculture': '#3A8FAE',
+                'Soil and Water': '#45875B',
+                'Forests and Wetlands': '#8CA94D',
+                'Clean Energy': '#F9BD24',
+                'Food Loss and Waste': '#EFA631',
+                'Enabling Healthy Diets for All': '#F58036',
+                'Inclusive Policies': '#C32429'
             };
 
             const getColorForDomain = (domainName) => {
                 return domainColorMap[domainName] || '#3B82F6';
+            };
+
+            // Domain icon mapping (official FAO Roadmap icons)
+            const domainIconMap = {
+                'Data': 'icons/01_data_transparent.png',
+                'Livestock': 'icons/02_livestock_transparent.png',
+                'Livestock.': 'icons/02_livestock_transparent.png',
+                'Crops': 'icons/03_crops_transparent.png',
+                'Fisheries and Aquaculture': 'icons/04_fisheries_transparent.png',
+                'Soil and Water': 'icons/05_soil_and_water_transparent.png',
+                'Forests and Wetlands': 'icons/06_forests_transparent.png',
+                'Clean Energy': 'icons/07_clean_energy_transparent.png',
+                'Food Loss and Waste': 'icons/08_food_loss_transparent.png',
+                'Enabling Healthy Diets for All': 'icons/09_healthy_diets_transparent.png',
+                'Inclusive Policies': 'icons/10_inclusive_policies_transparent.png'
+            };
+
+            const getIconForDomain = (domainName) => {
+                return domainIconMap[domainName] || '';
             };
 
             const dashboardData = window.dashboardData;
@@ -250,100 +270,100 @@
             const DonutChart = ({ data, onSliceClick }) => {
                 const width = 1300;
                 const height = 1300;
-                const radius = 450;
-                const innerRadius = 260;
+                const ringRadius = 470;      // distance from center to each icon center
+                const iconSize = 200;        // icon diameter
                 const centerX = width / 2;
                 const centerY = height / 2;
 
-                const total = data.reduce((sum, d) => sum + d.total_policies, 0);
-
-                let currentAngle = -Math.PI / 2;
-                const slices = data.map((domain, index) => {
-                    const percentage = domain.total_policies / total;
-                    const angleSize = percentage * 2 * Math.PI;
-                    const startAngle = currentAngle;
-                    const endAngle = currentAngle + angleSize;
-                    const midAngle = startAngle + angleSize / 2;
-
-                    const x1 = centerX + radius * Math.cos(startAngle);
-                    const y1 = centerY + radius * Math.sin(startAngle);
-                    const x2 = centerX + radius * Math.cos(endAngle);
-                    const y2 = centerY + radius * Math.sin(endAngle);
-                    const x3 = centerX + innerRadius * Math.cos(endAngle);
-                    const y3 = centerY + innerRadius * Math.sin(endAngle);
-                    const x4 = centerX + innerRadius * Math.cos(startAngle);
-                    const y4 = centerY + innerRadius * Math.sin(startAngle);
-
-                    const largeArcFlag = angleSize > Math.PI ? 1 : 0;
-
-                    const path = `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} L ${x3} ${y3} A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x4} ${y4} Z`;
-
-                    const labelRadius = radius + 40;
-                    const labelX = centerX + labelRadius * Math.cos(midAngle);
-                    const labelY = centerY + labelRadius * Math.sin(midAngle);
+                // Evenly space the domains around the ring, starting at the top (12 o'clock)
+                const nodes = data.map((domain, index) => {
+                    const angle = -Math.PI / 2 + (index / data.length) * 2 * Math.PI;
+                    const cx = centerX + ringRadius * Math.cos(angle);
+                    const cy = centerY + ringRadius * Math.sin(angle);
+                    // Label sits radially outward from the icon
+                    const labelRadius = ringRadius + iconSize / 2 + 40;
+                    const labelX = centerX + labelRadius * Math.cos(angle);
+                    const labelY = centerY + labelRadius * Math.sin(angle);
                     const textAnchor = labelX > centerX + 10 ? 'start' : labelX < centerX - 10 ? 'end' : 'middle';
-
-                    currentAngle = endAngle;
-
-                    return { path, labelX, labelY, textAnchor, domain, color: getColorForDomain(domain.name), index };
+                    return {
+                        domain,
+                        index,
+                        cx,
+                        cy,
+                        labelX,
+                        labelY,
+                        textAnchor,
+                        color: getColorForDomain(domain.name),
+                        icon: getIconForDomain(domain.name)
+                    };
                 });
 
-                const hoveredDomain = hoveredSegment !== null ? slices[hoveredSegment].domain : null;
+                const hoveredDomain = hoveredSegment !== null ? nodes[hoveredSegment].domain : null;
 
                 return (
-                    <div className="relative">
-                        <svg width={width} height={height} className="mx-auto">
+                    <div className="relative w-full h-full flex items-center justify-center">
+                        <svg viewBox="-380 -20 2060 1360" preserveAspectRatio="xMidYMin meet" className="w-full h-full" style={{ maxHeight: '100%' }}>
                             <defs>
-                                {slices.map((slice, i) => (
-                                    <filter key={i} id={`shadow-${i}`}>
-                                        <feDropShadow dx="0" dy="4" stdDeviation="6" floodOpacity="0.4"/>
-                                    </filter>
-                                ))}
+                                <filter id="icon-shadow" x="-30%" y="-30%" width="160%" height="160%">
+                                    <feDropShadow dx="0" dy="6" stdDeviation="10" floodOpacity="0.45"/>
+                                </filter>
                             </defs>
 
-                            {slices.map((slice, index) => (
-                                <g key={index}>
-                                    <path
-                                        d={slice.path}
-                                        fill={slice.color}
-                                        stroke="#1a1a1a"
-                                        strokeWidth="3"
-                                        filter={`url(#shadow-${index})`}
-                                        className="cursor-pointer transition-all duration-300"
-                                        style={{
-                                            opacity: hoveredSegment === null || hoveredSegment === index ? 1 : 0.4,
-                                            transform: hoveredSegment === index ? 'scale(1.08)' : 'scale(1)',
-                                            transformOrigin: `${centerX}px ${centerY}px`
-                                        }}
-                                        onClick={() => onSliceClick(slice.domain)}
+                            {nodes.map((node, index) => {
+                                const isHovered = hoveredSegment === index;
+                                const dim = hoveredSegment !== null && !isHovered;
+                                const scale = isHovered ? 1.12 : 1;
+                                const size = iconSize * scale;
+                                return (
+                                    <g
+                                        key={index}
+                                        className="cursor-pointer"
+                                        style={{ transition: 'opacity 300ms', opacity: dim ? 0.4 : 1 }}
+                                        onClick={() => onSliceClick(node.domain)}
                                         onMouseEnter={() => setHoveredSegment(index)}
                                         onMouseLeave={() => setHoveredSegment(null)}
-                                    />
-
-                                    <text x={slice.labelX} y={slice.labelY} textAnchor={slice.textAnchor} className="text-base font-bold pointer-events-none fill-gray-200">
-                                        {slice.domain.name}
-                                    </text>
-                                    <text x={slice.labelX} y={slice.labelY + 20} textAnchor={slice.textAnchor} className="text-sm pointer-events-none fill-gray-400">
-                                        {slice.domain.unique_policies} policies
-                                    </text>
-                                </g>
-                            ))}
-
-                            <circle cx={centerX} cy={centerY} r={innerRadius - 5} fill="#0a0a0a" className="pointer-events-none" />
+                                    >
+                                        {/* Soft halo ring on hover */}
+                                        {isHovered && (
+                                            <circle cx={node.cx} cy={node.cy} r={iconSize / 2 + 14}
+                                                fill="none" stroke={node.color} strokeWidth="4" opacity="0.6" />
+                                        )}
+                                        <image
+                                            href={node.icon}
+                                            x={node.cx - size / 2}
+                                            y={node.cy - size / 2}
+                                            width={size}
+                                            height={size}
+                                            filter="url(#icon-shadow)"
+                                            style={{ transition: 'all 300ms' }}
+                                        />
+                                        <text x={node.labelX} y={node.labelY} textAnchor={node.textAnchor}
+                                            fontSize="30" fontWeight="700"
+                                            className="pointer-events-none fill-white">
+                                            {node.domain.name}
+                                        </text>
+                                        <text x={node.labelX} y={node.labelY + 36} textAnchor={node.textAnchor}
+                                            fontSize="24"
+                                            className="pointer-events-none fill-gray-400">
+                                            {node.domain.total_actions} actions · {node.domain.unique_policies} policies
+                                        </text>
+                                    </g>
+                                );
+                            })}
 
                             {hoveredDomain ? (
                                 <g>
-                                    <text x={centerX} y={centerY - 50} textAnchor="middle" className="text-2xl font-bold fill-white">{hoveredDomain.name}</text>
-                                    <text x={centerX} y={centerY - 15} textAnchor="middle" className="text-base fill-gray-300">{hoveredDomain.total_actions} Actions</text>
-                                    <text x={centerX} y={centerY + 15} textAnchor="middle" className="text-base fill-gray-300">{hoveredDomain.total_policies} Policy Linkages</text>
-                                    <text x={centerX} y={centerY + 45} textAnchor="middle" className="text-base fill-gray-300">{hoveredDomain.total_metrics} Targets</text>
-                                    <text x={centerX} y={centerY + 80} textAnchor="middle" className="text-sm fill-blue-400 font-semibold">Click to explore →</text>
+                                    <text x={centerX} y={centerY - 60} textAnchor="middle" fontSize="40" fontWeight="700" className="fill-white">{hoveredDomain.name}</text>
+                                    <text x={centerX} y={centerY - 14} textAnchor="middle" fontSize="28" className="fill-gray-300">{hoveredDomain.total_actions} Actions</text>
+                                    <text x={centerX} y={centerY + 24} textAnchor="middle" fontSize="28" className="fill-gray-300">{hoveredDomain.total_policies} Policy Linkages</text>
+                                    <text x={centerX} y={centerY + 62} textAnchor="middle" fontSize="28" className="fill-gray-300">{hoveredDomain.total_metrics} Targets</text>
+                                    <text x={centerX} y={centerY + 104} textAnchor="middle" fontSize="26" fontWeight="600" className="fill-blue-400">Click to explore →</text>
                                 </g>
                             ) : (
                                 <g>
-                                    <text x={centerX} y={centerY - 35} textAnchor="middle" className="text-3xl font-bold fill-white">Denmark</text>
-                                    <text x={centerX} y={centerY + 5} textAnchor="middle" className="text-2xl font-bold fill-gray-300">FAO Global Roadmap</text>
-                                    <text x={centerX} y={centerY + 40} textAnchor="middle" className="text-base fill-gray-400">Policy Mapping</text>
+                                    <text x={centerX} y={centerY - 44} textAnchor="middle" fontSize="50" fontWeight="700" className="fill-white">Denmark</text>
+                                    <text x={centerX} y={centerY + 8} textAnchor="middle" fontSize="36" fontWeight="700" className="fill-gray-300">FAO Global Roadmap</text>
+                                    <text x={centerX} y={centerY + 48} textAnchor="middle" fontSize="26" className="fill-gray-400">Policy Mapping</text>
                                 </g>
                             )}
                         </svg>
@@ -714,14 +734,14 @@
             };
 
             return (
-                <div className="min-h-screen bg-black p-6">
-                    <div className="max-w-7xl mx-auto">
+                <div className="h-screen overflow-hidden bg-black p-4 flex flex-col">
+                    <div className="max-w-7xl mx-auto w-full flex flex-col flex-1 min-h-0">
                         {/* Header */}
-                        <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-xl shadow-2xl p-6 mb-6 border border-gray-700">
+                        <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-xl shadow-lg px-4 py-2 mb-2 border border-gray-700 flex-shrink-0">
                             <div className="flex items-center justify-between">
-                                <div>
-                                    <h1 className="text-4xl font-bold text-white mb-2">Denmark FAO Global Roadmap Policy Mapping</h1>
-                                    <p className="text-gray-400 text-lg">Interactive exploration of policy alignment with FAO Global Roadmap</p>
+                                <div className="flex items-center gap-3">
+                                    <img src="icons/roadmap_logo.png" alt="FAO Global Roadmap" className="h-10 w-10 flex-shrink-0" />
+                                    <h1 className="text-base font-bold text-white leading-tight">Denmark FAO Global Roadmap Policy Mapping</h1>
                                 </div>
                                 {(selectedDomain || searchView) && (
                                     <button
@@ -740,16 +760,16 @@
 
                             {/* Search Bar */}
                             {!selectedDomain && !searchView && (
-                                <div className="mt-6 relative">
+                                <div className="mt-2 flex gap-2 items-center relative">
                                     {/* Search Type Tabs */}
-                                    <div className="flex gap-2 mb-3">
+                                    <div className="flex gap-2 flex-shrink-0">
                                         <button
                                             onClick={() => {
                                                 setSearchType('actions');
                                                 setSearchTerm('');
                                                 setShowResults(false);
                                             }}
-                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                                                 searchType === 'actions'
                                                     ? 'bg-blue-600 text-white shadow-lg'
                                                     : 'bg-gray-800 text-gray-400 hover:text-white border border-gray-700'
@@ -763,7 +783,7 @@
                                                 setSearchTerm('');
                                                 setShowResults(false);
                                             }}
-                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                                                 searchType === 'linkages'
                                                     ? 'bg-purple-600 text-white shadow-lg'
                                                     : 'bg-gray-800 text-gray-400 hover:text-white border border-gray-700'
@@ -777,7 +797,7 @@
                                                 setSearchTerm('');
                                                 setShowResults(false);
                                             }}
-                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                                                 searchType === 'targets'
                                                     ? 'bg-green-600 text-white shadow-lg'
                                                     : 'bg-gray-800 text-gray-400 hover:text-white border border-gray-700'
@@ -786,7 +806,7 @@
                                             Search Targets
                                         </button>
                                     </div>
-                                    <div className="relative">
+                                    <div className="relative flex-1">
                                         <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
                                         <input
                                             type="text"
@@ -799,7 +819,7 @@
                                             }
                                             value={searchTerm}
                                             onChange={(e) => handleSearch(e.target.value)}
-                                            className="w-full pl-12 pr-10 py-3 bg-gray-800 border-2 border-gray-700 rounded-lg focus:border-blue-500 focus:outline-none text-white placeholder-gray-500"
+                                            className="w-full pl-12 pr-10 py-2 bg-gray-800 border-2 border-gray-700 rounded-lg focus:border-blue-500 focus:outline-none text-white placeholder-gray-500 text-sm"
                                         />
                                         {searchTerm && (
                                             <button
@@ -886,23 +906,21 @@
                         </div>
 
                         {/* Main Content Area */}
-                        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-2xl p-8 border border-gray-700" style={{ minHeight: '600px' }}>
+                        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-2xl p-4 border border-gray-700 flex-1 min-h-0 overflow-y-auto">
                             {searchView ? (
                                 <SearchResultsView />
                             ) : !selectedDomain ? (
-                                <div>
-                                    <div className="text-center mb-8">
-                                        <h2 className="text-2xl font-bold text-white mb-2">FAO Global Roadmap Domains Overview</h2>
-                                        <p className="text-gray-400">Hover over a domain • Click to explore actions</p>
+                                <div className="h-full flex flex-col">
+                                    <div className="flex-1 min-h-0">
+                                        <DonutChart
+                                            data={dashboardData.domains}
+                                            onSliceClick={(domain) => {
+                                                setSelectedDomain(domain);
+                                                setSelectedAction(null);
+                                                setSearchView(null);
+                                            }}
+                                        />
                                     </div>
-                                    <DonutChart
-                                        data={dashboardData.domains}
-                                        onSliceClick={(domain) => {
-                                            setSelectedDomain(domain);
-                                            setSelectedAction(null);
-                                            setSearchView(null);
-                                        }}
-                                    />
                                 </div>
                             ) : (
                                 <DomainDetailView />
@@ -910,12 +928,10 @@
                         </div>
 
                         {/* Footer */}
-                        <div className="mt-6 text-center">
-                            <div className="bg-gray-900 rounded-lg shadow-lg p-4 inline-block border border-gray-700">
-                                <p className="text-sm text-gray-400">
-                                    <strong className="text-gray-300">Data Source:</strong> FAO Denmark Policy Document Analysis • <strong className="text-gray-300">Last updated:</strong> November 2024
-                                </p>
-                            </div>
+                        <div className="mt-2 text-center flex-shrink-0">
+                            <p className="text-xs text-gray-500">
+                                <strong className="text-gray-400">Data Source:</strong> FAO Denmark Policy Document Analysis • <strong className="text-gray-400">Last updated:</strong> June 2026
+                            </p>
                         </div>
                     </div>
                 </div>
